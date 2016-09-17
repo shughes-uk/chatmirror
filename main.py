@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
+import os
 import sys
 import time
-import os
+
 from yaml import load
+
 from twitchchat import twitch_chat
 from youtubechat import YoutubeLiveChat, get_live_chat_id_for_stream_now
-import argparse
+
 logger = logging.getLogger('charmirror')
 
 
@@ -17,7 +20,7 @@ def get_config():
     config = None
     if os.path.isfile('config.txt'):
         config = load(open('config.txt', 'r'))
-        required_settings = ['twitch_username', 'twitch_oauth', 'twitch_channel']
+        required_settings = ['twitch_username', 'twitch_oauth', 'twitch_channel', 'client_id']
         for setting in required_settings:
             if setting not in config:
                 msg = '{} not present in config.txt, put it there! check config_example.txt!'.format(setting)
@@ -34,7 +37,8 @@ class Chatmirror(object):
 
     def __init__(self, config):
         self.config = config
-        self.tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], [config['twitch_channel']])
+        self.tirc = twitch_chat(config['twitch_username'], config['twitch_oauth'], [config['twitch_channel']],
+                                config['client_id'])
         self.tirc.subscribeChatMessage(self.new_twitchmessage)
         self.chatId = get_live_chat_id_for_stream_now('oauth_creds')
         self.ytchat = YoutubeLiveChat('oauth_creds', [self.chatId])
@@ -66,18 +70,18 @@ class Chatmirror(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d',
-                        '--debug',
-                        help="Enable debugging statements",
-                        action="store_const",
-                        dest="loglevel",
-                        const=logging.DEBUG,
-                        default=logging.INFO,)
+    parser.add_argument(
+        '-d',
+        '--debug',
+        help="Enable debugging statements",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.INFO,)
     args = parser.parse_args()
 
-    logging.basicConfig(level=args.loglevel,
-                        format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s',
-                        datefmt='%H:%M:%S')
+    logging.basicConfig(
+        level=args.loglevel, format='%(asctime)s.%(msecs)d %(levelname)s %(name)s : %(message)s', datefmt='%H:%M:%S')
     config = get_config()
     mirror = Chatmirror(config)
     mirror.start()
